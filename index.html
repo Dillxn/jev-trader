@@ -311,7 +311,7 @@
   </div>
 </main>
 
-<script src="app.js"></script>
+<script src="app.js?v=1dc9608526"></script>
 <script>
 "use strict";
 const $ = (sel) => document.querySelector(sel);
@@ -590,7 +590,10 @@ function renderForecast(snap) {
   const load = state.overview?.layaLoad;
   $("#forecast-card h2").textContent = load ? "Laya model" : "Latest forecast";
   if (load) { box.replaceChildren(...renderModelLoad(load)); return; }
-  if (!snap) { box.replaceChildren(el("p", { class: "empty" }, "No session running.")); return; }
+  if (!snap) {
+    box.replaceChildren(el("p", { class: "empty" }, state.overview?.status === "starting" ? "Starting session: connecting to the market…" : "No session running."));
+    return;
+  }
   const now = snap.time;
   const parts = [];
   if (snap.warmupRemainingSec > 0) parts.push(el("p", { class: "hint" }, `Warming up: collecting ${Math.ceil(snap.warmupRemainingSec)}s more market history before the first forecast.`));
