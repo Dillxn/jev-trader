@@ -120,6 +120,7 @@
   .neg { color: var(--critical); }
   .forecast-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .forecast-head .dir { font-size: 22px; font-weight: 650; }
+  progress { accent-color: var(--accent); }
   .bar { display: flex; gap: 2px; height: 14px; margin: 10px 0 6px; }
   .bar span { border-radius: 4px; min-width: 2px; }
   .bar-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
@@ -557,8 +558,38 @@ function renderTiles(snap, o) {
   );
 }
 
+function renderModelLoad(load) {
+  const mb = (b) => Math.round(b / 1e6).toLocaleString();
+  const elapsed = (Date.now() - load.startedAt) / 1000;
+  let title, detail, value = null;
+  if (load.stage === "downloading" && load.total) {
+    const pct = load.loaded / load.total;
+    const rate = load.loaded / Math.max(elapsed, 1);
+    // Early rates are noisy: estimate only after the first 5%.
+    const left = pct >= 0.05 && rate > 0 ? Math.ceil((load.total - load.loaded) / rate) : null;
+    title = `Downloading Laya · ${Math.floor(pct * 100)}%`;
+    detail = `${mb(load.loaded)} of ${mb(load.total)} MB${left !== null && pct < 1 ? ` · about ${left >= 60 ? `${Math.ceil(left / 60)} min` : `${left}s`} left` : ""}. One-time download: next time it loads from this device.`;
+    value = pct;
+  } else if (load.stage === "cache") {
+    title = "Loading Laya from this device";
+    detail = "Already downloaded, reading it from the browser's cache.";
+  } else if (load.stage === "starting") {
+    title = "Starting Laya";
+    detail = "Preparing the model to run on this device. This takes a few seconds.";
+  } else {
+    title = "Preparing Laya";
+    detail = "Checking whether the model is already on this device.";
+  }
+  const bar = el("progress", { max: "1", "aria-label": title, style: "width:100%;height:10px;margin:10px 0 6px" });
+  if (value !== null) bar.value = value; // no value → indeterminate (animated)
+  return [el("div", { class: "forecast-head" }, el("span", { class: "dir", style: "font-size:18px" }, title)), bar, el("p", { class: "hint" }, detail)];
+}
+
 function renderForecast(snap) {
   const box = $("#forecast");
+  const load = state.overview?.layaLoad;
+  $("#forecast-card h2").textContent = load ? "Laya model" : "Latest forecast";
+  if (load) { box.replaceChildren(...renderModelLoad(load)); return; }
   if (!snap) { box.replaceChildren(el("p", { class: "empty" }, "No session running.")); return; }
   const now = snap.time;
   const parts = [];
