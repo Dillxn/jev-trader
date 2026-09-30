@@ -160,6 +160,7 @@
   <h1>jev-trader</h1>
   <span class="pill" id="status" data-state="idle"><span class="dot"></span><span id="status-text">idle</span></span>
   <span class="badge">PAPER</span>
+  <span class="muted" id="build" style="font-size:11px" title="Build of the page's app script"></span>
   <span id="runline"></span>
   <span class="spacer"></span>
   <button id="stop" disabled>Stop</button>
@@ -746,6 +747,9 @@ function renderCharts(snap) {
 window.addEventListener("resize", () => renderCharts(state.overview?.snapshot));
 
 (async () => {
+  // Which build this tab is running (the static site stamps app.js?v=<hash>).
+  const appScript = document.querySelector('script[src^="app.js"]');
+  $("#build").textContent = appScript ? `build ${new URL(appScript.src).searchParams.get("v") ?? "dev"}` : "local server";
   const caps = backend.capabilities;
   $("#record-card").hidden = !caps.record;
   if (!caps.replay) form.feed.querySelector('option[value="replay"]').remove();
